@@ -34,7 +34,7 @@ This section walks you through what is expected from this project.
 
 ### Specifications: 
 
-* **Data sources**: The source system that stores the raw data, and are presented as CSV files.
+* **Data sources**: The source system that stores the raw data, which are presented as CSV files.
 * **Build ETL Log Table**: Build log tables that track every ETL step, enabling easy monitoring, traceability, and debugging.
 * **Data Ingestion**: Load raw data into the data warehouse.
 * **Data Transformation**: Transform raw data into cleaned and prepared data.
@@ -69,15 +69,28 @@ Generate SQL and BI reports that draw insight into:
 
 These key business metrics generate insightful information about the business overall performance, enforcing data-driven decision making.
 
+---
+
 ## Tools & Technologies Used
 
 * **Notion**: Project Planning
 * **SQL Server**: Database engine that stores data.
-* **SQL Server Management Studio (SSMS): Interface for interacting with SQL server.
+* **SQL Server Management Studio (SSMS)**: Interface for interacting with SQL server.
 * **Draw.io**: For designing the data architecture, data flow, integration model, and data model.
 * **Git Hub**: For committing codes.
 
+---
 
+## License
+This project is licensed under **MIT License**. You are free to use, modify, or share with proper attribution.
+
+---
+
+## About Me
+Hi there! I'm **Otusanya Toyib Oluwatimilehin**. I'm an aspiring **Data Engineer and Analyst** passionate about building reliable data pipelines, efficient data models, and generating data-driven business decisions. 
+
+<img src="https://cdn-icons-png.flaticon.com/128/724/724664.png" width="18" alt="Phone"/> **07082154436** 
+<img src="https://cdn-icons-png.flaticon.com/128/732/732200.png" width="18" alt="E-mail"/> **toyibotusanya@gmail.com**
 
 
 
