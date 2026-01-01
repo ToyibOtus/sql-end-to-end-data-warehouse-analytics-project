@@ -52,7 +52,7 @@ This section walks you through what is expected from this project.
 Build a data warehouse that consolidates sales data, and supports data analytics and BI reporting.
 
 ### Data Architecture
-The data warehouse is built using the Medallion Architecture **Bronze**, **Silver**, and **Gold**.
+This data warehouse is built using the Medallion Architecture **Bronze**, **Silver**, and **Gold**.
 
 ![data_architecture.png](docs/01_data_architecture.png)
 
