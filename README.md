@@ -54,7 +54,7 @@ Build a data warehouse that consolidates sales data, and supports data analytics
 ### Data Architecture
 This data warehouse is built using the Medallion Architecture **Bronze**, **Silver**, and **Gold**.
 
-![data_architecture.png](docs/01_data_architecture.png)
+![data_architecture.png](docs/00_data_architecture.png)
 
 * **Bronze**: Stores raw data as-is.
 * **Silver**: Houses cleaned and prepared data.
