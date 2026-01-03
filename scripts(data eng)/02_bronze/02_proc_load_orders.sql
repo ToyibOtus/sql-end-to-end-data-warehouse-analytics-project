@@ -1,0 +1,145 @@
+/*
+=============================================================================================
+Stored Procedure: Load Bronze Table (Source -> Bronze)
+=============================================================================================
+Script Purpose:
+	This script loads data from a CSV file into a bronze table [orders]. Additionaly, 
+	it loads log tables with vital log details, which id essential for easy traceability 
+	and debugging.
+
+Parameter: @job_run_id
+
+Usage: EXEC bronze.usp_load_bronze_orders @job_run_id
+
+Note:
+	* Running this script independently demands that you assign a integer value to @job_run_id.
+	* It is imperative that this value already exist in the log table [metadata.etl_job_run] due
+	  to the foreign key constraint set on both log tables [metadata.etl_step_run] and
+	  [metadata.etl_step_run].
+	* To test the working condition of this script, check folder titled "test_run".
+=============================================================================================
+*/
+CREATE OR ALTER PROCEDURE bronze.usp_load_bronze_orders @job_run_id INT AS
+BEGIN
+	-- Abort transaction on severe error
+	SET XACT_ABORT ON;
+
+	-- Create and map values to variables where necessary
+	DECLARE
+	@step_run_id INT,
+	@step_name NVARCHAR(50) = 'usp_load_bronze_orders',
+	@load_type NVARCHAR(50) = 'Full',
+	@ingest_layer NVARCHAR(50) = 'BRONZE',
+	@ingest_table NVARCHAR(50) = 'orders',
+	@start_time DATETIME,
+	@end_time DATETIME,
+	@step_duration INT,
+	@step_status NVARCHAR(50) = 'RUNNING',
+	@source_path NVARCHAR(260) = 'C:\Users\PC\Documents\big-dataset\orders.csv',
+	@rows_loaded INT,
+	@err_message NVARCHAR(MAX),
+	@sql NVARCHAR(MAX);
+
+	-- Capture start time
+	SET @start_time = GETDATE();
+
+	-- Load into log table before transaction
+	INSERT INTO metadata.etl_step_run
+	(
+		job_run_id,
+		step_name,
+		load_type,
+		ingest_layer,
+		ingest_table,
+		start_time,
+		step_status,
+		source_path
+	)
+	VALUES
+	(
+		@job_run_id,
+		@step_name,
+		@load_type,
+		@ingest_layer,
+		@ingest_table,
+		@start_time,
+		@step_status,
+		@source_path
+	);
+	-- Retrieve recently generated step_run_id from [metadata.etl_step_run]
+	SET @step_run_id = SCOPE_IDENTITY();
+
+	BEGIN TRY
+		-- Begin Transaction
+		BEGIN TRAN;
+
+		-- Delete data from table
+		TRUNCATE TABLE bronze.orders;
+
+		-- Load data into table
+		SET @sql = 'BULK INSERT bronze.orders FROM ''' + @source_path + ''' WITH (FIRSTROW = 2, FIELDTERMINATOR = '';'', TABLOCK);';
+		EXEC (@sql);
+
+		-- Finalize transaction on success
+		COMMIT TRAN;
+
+		-- Map values to variables in try block
+		SET @end_time = GETDATE();
+		SET @step_duration = DATEDIFF(second, @start_time, @end_time);
+		SET @step_status = 'SUCCESSFUL';
+		SELECT @rows_loaded = COUNT(*) FROM bronze.orders;
+
+		-- Update log table on successful transaction
+		UPDATE metadata.etl_step_run
+			SET
+				end_time = @end_time,
+				step_duration_seconds = @step_duration,
+				step_status = @step_status,
+				rows_loaded = @rows_loaded
+			WHERE step_run_id = @step_run_id;
+	END TRY
+
+	BEGIN CATCH
+		-- Map values to variables in catch block
+		SET @end_time = GETDATE();
+		SET @step_duration = DATEDIFF(second, @start_time, @end_time);
+		SET @step_status = 'FAILED';
+
+		-- Rollback transaction on error
+		IF @@TRANCOUNT > 0 ROLLBACK TRAN;
+
+		-- Map zero to rows loaded if NULL
+		IF @rows_loaded IS NULL SET @rows_loaded = 0;
+
+		-- Update log table on failed transaction
+		UPDATE metadata.etl_step_run
+			SET
+				end_time = @end_time,
+				step_duration_seconds = @step_duration,
+				step_status = @step_status,
+				rows_loaded = @rows_loaded
+			WHERE step_run_id = @step_run_id;
+
+		-- Load log table with error details
+		INSERT INTO metadata.etl_error_log
+		(
+			job_run_id,
+			step_run_id,
+			step_status,
+			err_procedure,
+			err_number,
+			err_message,
+			err_line
+		)
+		VALUES
+		(
+			@job_run_id,
+			@step_run_id,
+			@step_status,
+			ERROR_PROCEDURE(),
+			ERROR_NUMBER(),
+			ERROR_MESSAGE(),
+			ERROR_LINE()
+		);
+	END CATCH;
+END;
