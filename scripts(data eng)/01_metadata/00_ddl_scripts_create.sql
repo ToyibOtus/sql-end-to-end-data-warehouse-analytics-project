@@ -42,6 +42,7 @@ CREATE TABLE metadata.etl_step_run
 	step_status NVARCHAR(50) NOT NULL,
 	source_path NVARCHAR(MAX) NOT NULL,
 	rows_in_source INT,
+	rows_to_load INT,
 	rows_updated INT NOT NULL,
 	rows_inserted INT NOT NULL,
 	rows_loaded INT NOT NULL,
@@ -66,8 +67,7 @@ CREATE TABLE metadata.etl_error_log
 	err_line INT NOT NULL,
 	CONSTRAINT pk_error_id PRIMARY KEY(error_id),
 	CONSTRAINT fk_etl_error_log_job_run_id FOREIGN KEY(job_run_id) REFERENCES metadata.etl_job_run(job_run_id),
-	CONSTRAINT fk_etl_error_log_step_run_id FOREIGN KEY(step_run_id) REFERENCES metadata.etl_step_run(step_run_id),
-	CONSTRAINT chk_etl_error_log_step_status CHECK(step_status IN('FAILED'))
+	CONSTRAINT fk_etl_error_log_step_run_id FOREIGN KEY(step_run_id) REFERENCES metadata.etl_step_run(step_run_id)
 );
 
 -- Create table [metadata.etl_data_quality_check]
@@ -81,7 +81,8 @@ CREATE TABLE metadata.etl_data_quality_check
 	dq_table_name NVARCHAR(50) NOT NULL,
 	dq_check_name NVARCHAR(50) NOT NULL,
 	rows_checked INT NOT NULL,
-	rows_failed INT NOT NULL
+	rows_failed INT NOT NULL,
+	dq_status NVARCHAR(50) NOT NULL,
 	CONSTRAINT pk_dq_run_id PRIMARY KEY(dq_run_id),
 	CONSTRAINT fk_etl_data_quality_check_job_run_id FOREIGN KEY(job_run_id) REFERENCES metadata.etl_job_run(job_run_id),
 	CONSTRAINT fk_etl_data_quality_check_step_run_id FOREIGN KEY(step_run_id) REFERENCES metadata.etl_step_run(step_run_id),
