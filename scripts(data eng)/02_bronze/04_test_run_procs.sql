@@ -24,7 +24,7 @@ INSERT INTO metadata.etl_job_run
 )
 VALUES
 (
-	'DEV_TEST_BRONZE_RUN',
+	'dev_test_bronze_run',
 	'BRONZE_TEST',
 	GETDATE(),
 	'TEST_RUN'
