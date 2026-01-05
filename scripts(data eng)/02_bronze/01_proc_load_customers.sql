@@ -4,7 +4,7 @@ Stored Procedure: Load Bronze Table (Source -> Bronze)
 =============================================================================================
 Script Purpose:
 	This script loads data from a CSV file into a bronze table [customers]. Additionaly, 
-	it loads log tables with vital log details, which id essential for easy traceability 
+	it loads log tables with vital log details, which is essential for easy traceability 
 	and debugging.
 
 Parameter: @job_run_id
