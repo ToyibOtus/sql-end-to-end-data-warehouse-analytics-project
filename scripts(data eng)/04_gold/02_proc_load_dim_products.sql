@@ -3,13 +3,13 @@
 Stored Procedure: Load Gold Table (Silver -> Gold)
 =======================================================================================================
 Script Purpose:
-This script loads data from a silver table into a corresponding gold table [products].
-It also performs data integration where necessary. Additionaly, it loads log tables 
-with vital log details, essential for traceability and debugging.
+	This script loads data from a silver table into a corresponding gold table [dim_products].
+	It also performs data integration where necessary. Additionaly, it loads log tables 
+	with vital log details, essential for traceability and debugging.
 
 Parameter: @job_run_id
 
-Usage: EXEC gold.usp_load_gold_products @job_run_id
+Usage: EXEC gold.usp_load_gold_dim_products @job_run_id
 
 Note:
 	* Running this script independently demands that you assign an integer value to @job_run_id.
@@ -18,7 +18,7 @@ Note:
 	* To test the working condition of this script, check folder titled "test_run".
 =======================================================================================================
 */
-CREATE OR ALTER PROCEDURE gold.usp_load_gold_products @job_run_id INT AS
+CREATE OR ALTER PROCEDURE gold.usp_load_gold_dim_products @job_run_id INT AS
 BEGIN
 	-- Abort on severe error
 	SET XACT_ABORT ON;
@@ -29,7 +29,7 @@ BEGIN
 	@step_name NVARCHAR(50) = 'usp_load_gold_products',
 	@load_type NVARCHAR(50) = 'INCREMENTAL',
 	@ingest_layer NVARCHAR(50) = 'GOLD',
-	@ingest_table NVARCHAR(50) = 'products',
+	@ingest_table NVARCHAR(50) = 'dim_products',
 	@start_time DATETIME,
 	@end_time DATETIME,
 	@step_duration INT,
@@ -95,14 +95,14 @@ BEGIN
 			sp.category,
 			sp.sub_category
 		FROM silver.products sp
-		LEFT JOIN gold.products gp
-		ON sp.product_id = gp.product_id
+		LEFT JOIN gold.dim_products dp
+		ON sp.product_id = dp.product_id
 		WHERE 
-			gp.product_id IS NULL OR
-			((gp.product_id IS NOT NULL) AND
-			(COALESCE(gp.product_name, '') != COALESCE(sp.product_name, '') OR
-			COALESCE(gp.category, '') != COALESCE(sp.category, '') OR
-			COALESCE(gp.sub_category, '') != COALESCE(sp.sub_category, '')))
+			dp.product_id IS NULL OR
+			((dp.product_id IS NOT NULL) AND
+			(COALESCE(dp.product_name, '') != COALESCE(sp.product_name, '') OR
+			COALESCE(dp.category, '') != COALESCE(sp.category, '') OR
+			COALESCE(dp.sub_category, '') != COALESCE(sp.sub_category, '')))
 		)
 		-- Load new records into temp table
 		SELECT
@@ -146,7 +146,7 @@ BEGIN
 				tgt.product_name = src.product_name,
 				tgt.category = src.category,
 				tgt.sub_category = src.sub_category
-				FROM gold.products tgt
+				FROM gold.dim_products tgt
 				INNER JOIN #gold_stg_products src
 				ON tgt.product_id = src.product_id
 			WHERE 
@@ -158,7 +158,7 @@ BEGIN
 		SET @rows_updated = @@ROWCOUNT;
 
 		-- Load new records into target table	
-		INSERT INTO gold.products
+		INSERT INTO gold.dim_products
 		(
 			product_id,
 			product_name,
@@ -171,7 +171,7 @@ BEGIN
 			src.category,
 			src.sub_category
 		FROM #gold_stg_products src
-		LEFT JOIN gold.products tgt
+		LEFT JOIN gold.dim_products tgt
 		ON src.product_id = tgt.product_id
 		WHERE tgt.product_id IS NULL;
 
