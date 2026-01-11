@@ -42,9 +42,6 @@ BEGIN
 	@rows_loaded INT = 0,
 	@rows_diff INT;
 
-	-- Drop temp table if exists
-	DROP TABLE IF EXISTS #gold_stg_customers;
-
 	-- Capture start time
 	SET @start_time = GETDATE();
 
@@ -86,6 +83,9 @@ BEGIN
 	SET @step_run_id = SCOPE_IDENTITY();
 
 	BEGIN TRY
+		-- Drop temp table if exists
+		DROP TABLE IF EXISTS #gold_stg_customers;
+
 		-- Retrieve new records
 		WITH new_records AS
 		(
