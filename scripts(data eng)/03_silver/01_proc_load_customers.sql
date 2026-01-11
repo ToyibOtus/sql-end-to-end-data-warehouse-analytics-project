@@ -84,7 +84,7 @@ BEGIN
 	SET @step_run_id = SCOPE_IDENTITY();
 
 	BEGIN TRY
-		-- Drop staging table if it exist
+		-- Delete staging table
 		TRUNCATE TABLE silver_stg.customers;
 
 		-- Transform retrieved records from source table
@@ -103,7 +103,7 @@ BEGIN
 			score
 		FROM bronze.customers
 		)
-		-- Retrieve necessary metadata columns
+		-- Generate metadata columns
 		, metadata_columns AS
 		(
 		SELECT
