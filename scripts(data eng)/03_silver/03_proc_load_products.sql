@@ -13,7 +13,7 @@ Parameter: @job_run_id
 Usage: EXEC silver.usp_load_silver_products @job_run_id
 
 Note:
-	* Running this script independently demands that you assign a integer value to @job_run_id.
+	* Running this script independently demands that you assign an integer value to @job_run_id.
 	* It is imperative that this value already exist in the log table [metadata.etl_job_run] due
 	  to the foreign key constraint set on dependent tables.
 	* To test the working condition of this script, check folder titled "test_run".
@@ -206,7 +206,7 @@ BEGIN
 				tgt.sub_category = src.sub_category,
 				tgt.dwh_row_hash = src.dwh_row_hash
 				FROM silver.products tgt
-				LEFT JOIN silver_stg.products src
+				INNER JOIN silver_stg.products src
 				ON tgt.product_id = src.product_id
 			WHERE tgt.dwh_row_hash != src.dwh_row_hash;
 
