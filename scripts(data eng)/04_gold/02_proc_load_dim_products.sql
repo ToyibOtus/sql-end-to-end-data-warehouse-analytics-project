@@ -84,7 +84,7 @@ BEGIN
 
 	BEGIN TRY
 		-- Drop temp table if exists
-		DROP TABLE IF EXISTS #gold_stg_products;
+		DROP TABLE IF EXISTS #gold_stg_dim_products;
 
 		-- Retrieve new records
 		WITH new_records AS
@@ -110,11 +110,11 @@ BEGIN
 			product_name,
 			category,
 			sub_category
-			INTO #gold_stg_products
+			INTO #gold_stg_dim_products
 		FROM new_records;
 
 		-- Retrieve total number of records from temp table
-		SELECT @rows_to_load = COUNT(*) FROM #gold_stg_products;
+		SELECT @rows_to_load = COUNT(*) FROM #gold_stg_dim_products;
 
 		-- Stop transaction if rows to load is zero or NULL
 		IF @rows_to_load = 0 OR @rows_to_load IS NULL
@@ -147,7 +147,7 @@ BEGIN
 				tgt.category = src.category,
 				tgt.sub_category = src.sub_category
 				FROM gold.dim_products tgt
-				INNER JOIN #gold_stg_products src
+				INNER JOIN #gold_stg_dim_products src
 				ON tgt.product_id = src.product_id
 			WHERE 
 				tgt.product_name != src.product_name OR
@@ -170,7 +170,7 @@ BEGIN
 			src.product_name,
 			src.category,
 			src.sub_category
-		FROM #gold_stg_products src
+		FROM #gold_stg_dim_products src
 		LEFT JOIN gold.dim_products tgt
 		ON src.product_id = tgt.product_id
 		WHERE tgt.product_id IS NULL;
