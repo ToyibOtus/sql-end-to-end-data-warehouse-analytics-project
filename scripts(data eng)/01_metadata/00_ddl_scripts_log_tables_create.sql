@@ -27,6 +27,19 @@ CREATE TABLE metadata.etl_job_run
 	CONSTRAINT chk_job_status CHECK(job_status IN('TEST_RUN', 'RUNNING', 'SUCCESSFUL', 'FAILED'))
 );
 
+-- Create table [metadata.etl_job_run_error_log]
+CREATE TABLE metadata.etl_job_run_error_log
+(
+	job_error_id INT IDENTITY(1001, 1) NOT NULL,
+	job_run_id INT NOT NULL,
+	error_timestamp DATETIME DEFAULT GETDATE() NOT NULL,
+	job_status NVARCHAR(50) NOT NULL,
+	err_procedure NVARCHAR(50) NOT NULL,
+	err_message NVARCHAR(MAX) NOT NULL,
+	CONSTRAINT pk_job_error_id PRIMARY KEY(job_error_id),
+	CONSTRAINT fk_etl_job_error_log_job_run_id FOREIGN KEY(job_run_id) REFERENCES metadata.etl_job_run(job_run_id)
+);
+
 -- Create table [metadata.etl_step_run]
 CREATE TABLE metadata.etl_step_run
 (
@@ -49,12 +62,12 @@ CREATE TABLE metadata.etl_step_run
 	rows_diff INT,
 	CONSTRAINT pk_step_run_id PRIMARY KEY(step_run_id),
 	CONSTRAINT fk_etl_step_run_job_run_id FOREIGN KEY(job_run_id) REFERENCES metadata.etl_job_run(job_run_id),
-	CONSTRAINT chk_etl_step_run_ingest_layer CHECK(ingest_layer IN('BRONZE', 'SILVER', 'GOLD')),
+	CONSTRAINT chk_etl_step_run_ingest_layer CHECK(ingest_layer IN('bronze', 'silver', 'gold')),
 	CONSTRAINT chk_etl_step_run_step_status CHECK(step_status IN('RUNNING', 'NO_OPERATION', 'SUCCESSFUL', 'FAILED'))
 );
 
--- Create table [metadata.etl_error_log]
-CREATE TABLE metadata.etl_error_log
+-- Create table [metadata.etl_step_run_error_log]
+CREATE TABLE metadata.etl_step_run_error_log
 (
 	error_id INT IDENTITY(1001, 1) NOT NULL,
 	job_run_id INT NOT NULL,
