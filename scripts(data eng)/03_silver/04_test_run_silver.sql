@@ -34,5 +34,5 @@ SET @job_run_id = SCOPE_IDENTITY();
 
 -- Load Silver Layer
 EXEC silver.usp_load_silver_customers @job_run_id;
-EXEC silver.usp_load_silver_orders @job_run_id;
 EXEC silver.usp_load_silver_products @job_run_id;
+EXEC silver.usp_load_silver_orders @job_run_id;
