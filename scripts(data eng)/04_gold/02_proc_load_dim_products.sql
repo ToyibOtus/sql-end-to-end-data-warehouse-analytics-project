@@ -26,7 +26,7 @@ BEGIN
 	-- Create and map values to variables where necessary
 	DECLARE 
 	@step_run_id INT,
-	@step_name NVARCHAR(50) = 'gold.usp_load_gold_products',
+	@step_name NVARCHAR(50) = 'gold.usp_load_gold_dim_products',
 	@load_type NVARCHAR(50) = 'INCREMENTAL',
 	@ingest_layer NVARCHAR(50) = 'gold',
 	@ingest_table NVARCHAR(50) = 'dim_products',
