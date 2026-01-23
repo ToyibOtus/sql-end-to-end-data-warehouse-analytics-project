@@ -6,7 +6,7 @@ Script Purpose:
 	This script loads data from a bronze table into a corresponding silver table [customers].
 	It also performs data transformaions where necessary. Additionaly, it loads log tables 
 	with vital log details, essential not only for traceability and debugging, but for 
-	monitoring the quality of the silver records.
+	monitoring quality of silver records.
 
 Parameter: @job_run_id
 
