@@ -6,7 +6,7 @@ Script Purpose:
 	This script loads data from a bronze table into a corresponding silver table [orders].
 	It also performs data transformaions where necessary. Additionaly, it loads log tables 
 	with vital log details, essential not only for traceability and debugging, but for 
-	monitoring quality of silver records.
+	monitoring the quality of the silver records.
 
 Parameter: @job_run_id
 
@@ -16,7 +16,7 @@ Note:
 	* Running this script independently demands that you assign an integer value to @job_run_id.
 	* It is imperative that this value already exist in the log table [metadata.etl_job_run] due
 	  to the foreign key constraint set on dependent tables.
-	* To test the working condition of this script, check folder titled "test_run_silver".
+	* To test the working condition of this script, check folder titled "test_run".
 =======================================================================================================
 */
 CREATE OR ALTER PROCEDURE silver.usp_load_silver_orders @job_run_id INT AS
@@ -96,38 +96,49 @@ BEGIN
 			product_id,
 			order_date,
 			shipping_date,
-			CASE
-				WHEN (sales IS NOT NULL AND NOT sales <= 0) AND (unit_price IS NULL OR unit_price = 0) THEN sales
-				WHEN sales IS NULL OR sales <= 0 OR sales != quantity * unit_price THEN ABS(quantity * unit_price)
-				ELSE sales
-			END AS sales,
+			gross_sales,
+			CAST((1 - discount) * gross_sales AS DECIMAL(10, 2)) AS net_sales,
 			quantity,
-			CASE
-				WHEN discount < 0 THEN ABS(discount)
-				WHEN discount IS NULL THEN 0
-				ELSE discount
-			END AS discount,
+			discount,
 			profit,
-			CASE
-				WHEN unit_price IS NULL OR unit_price = 0 THEN ROUND(ABS(sales/NULLIF(quantity, 0)), 3)
-				WHEN unit_price < 0 THEN ABS(unit_price)
-				ELSE unit_price
-			END AS unit_price
+			unit_price
 		FROM
 		(
-		SELECT
-			order_id,
-			customer_id,
-			product_id,
-			CONVERT(DATE, order_date, 103) AS order_date,
-			CONVERT(DATE, shipping_date, 103) AS shipping_date,
-			CAST(REPLACE(sales, ',', '.') AS DECIMAL(10, 3)) AS sales,
-			quantity,
-			CAST(REPLACE(discount, ',', '.') AS DECIMAL(10, 2)) AS discount,
-			CAST(REPLACE(profit, ',', '.') AS DECIMAL(10, 3)) AS profit,
-			CAST(REPLACE(unit_price, ',', '.') AS DECIMAL(10, 3)) AS unit_price
-		FROM bronze.orders
-		)SUB
+			SELECT
+				order_id,
+				customer_id,
+				product_id,
+				order_date,
+				shipping_date,
+				CASE
+					WHEN (gross_sales IS NULL OR gross_sales <= 0 OR gross_sales != quantity * unit_price) AND (NOT unit_price = 0) 
+					THEN ABS(quantity * unit_price)
+					ELSE gross_sales
+				END AS gross_sales,
+				quantity,
+				discount,
+				profit,
+				CASE
+					WHEN unit_price IS NULL OR unit_price = 0 THEN ABS(gross_sales/NULLIF(quantity, 0))
+					WHEN unit_price < 0 THEN ABS(unit_price)
+					ELSE unit_price
+				END AS unit_price
+			FROM
+			(
+				SELECT
+					order_id,
+					customer_id,
+					product_id,
+					CONVERT(DATE, order_date, 103) AS order_date,
+					CONVERT(DATE, shipping_date, 103) AS shipping_date,
+					CAST(REPLACE(sales, ',', '.') AS DECIMAL(10, 2)) AS gross_sales,
+					quantity,
+					CAST(REPLACE(discount, ',', '.') AS DECIMAL(10, 2)) AS discount,
+					CAST(REPLACE(profit, ',', '.') AS DECIMAL(10, 2)) AS profit,
+					CAST(REPLACE(unit_price, ',', '.') AS DECIMAL(10, 2)) AS unit_price
+				FROM bronze.orders
+			)SUB1
+		)SUB2
 		)
 		-- Generate metadata columns
 		, metadata_columns AS
@@ -138,7 +149,8 @@ BEGIN
 			product_id,
 			order_date,
 			shipping_date,
-			sales,
+			gross_sales,
+			net_sales,
 			quantity,
 			discount,
 			profit,
@@ -147,13 +159,7 @@ BEGIN
 			COALESCE(CAST(order_id AS NVARCHAR(10)), ''),
 			COALESCE(CAST(customer_id AS NVARCHAR(10)), ''),
 			COALESCE(CAST(product_id AS NVARCHAR(10)), ''),
-			COALESCE(CONVERT(NVARCHAR(10), order_date, 120), ''),
-			COALESCE(CONVERT(NVARCHAR(10), shipping_date, 120), ''),
-			COALESCE(CONVERT(NVARCHAR(30), sales, 2), ''),
-			COALESCE(CAST(quantity AS NVARCHAR(20)), ''),
-			COALESCE(CONVERT(NVARCHAR(30), discount, 2), ''),
-			COALESCE(CONVERT(NVARCHAR(30), profit, 2), ''),
-			COALESCE(CONVERT(NVARCHAR(30), unit_price, 2), ''))) AS dwh_row_hash
+			COALESCE(CAST(quantity AS NVARCHAR(20)), ''))) AS dwh_row_hash
 		FROM data_transformations
 		)
 		-- Load into staging table
@@ -164,7 +170,8 @@ BEGIN
 			product_id,
 			order_date,
 			shipping_date,
-			sales,
+			gross_sales,
+			net_sales,
 			quantity,
 			discount,
 			profit,
@@ -177,7 +184,8 @@ BEGIN
 			mc.product_id,
 			mc.order_date,
 			mc.shipping_date,
-			mc.sales,
+			mc.gross_sales,
+			mc.net_sales,
 			mc.quantity,
 			mc.discount,
 			mc.profit,
@@ -224,9 +232,10 @@ BEGIN
 			SUM(CASE WHEN order_id IS NULL THEN 1 ELSE 0 END) AS rows_failed_order_id_null,
 			SUM(CASE WHEN customer_id IS NULL THEN 1 ELSE 0 END) AS rows_failed_customer_id_null,
 			SUM(CASE WHEN product_id IS NULL THEN 1 ELSE 0 END) AS rows_failed_product_id_null,
-			SUM(CASE WHEN sales IS NULL OR sales <= 0 OR sales != quantity * unit_price THEN 1 ELSE 0 END) AS rows_failed_invalid_sales,
-			SUM(CASE WHEN quantity IS NULL OR quantity <= 0 OR quantity != sales/NULLIF(unit_price, 0) THEN 1 ELSE 0 END) AS rows_failed_invalid_quantity,
-			SUM(CASE WHEN unit_price IS NULL OR unit_price <= 0 OR unit_price != sales/NULLIF(quantity, 0) THEN 1 ELSE 0 END) AS rows_failed_unit_price
+			SUM(CASE WHEN gross_sales IS NULL OR gross_sales <= 0 OR gross_sales != quantity * unit_price THEN 1 ELSE 0 END) AS rows_failed_invalid_sales,
+			SUM(CASE WHEN quantity IS NULL OR quantity <= 0 OR quantity != gross_sales/NULLIF(unit_price, 0) THEN 1 ELSE 0 END) AS rows_failed_invalid_quantity,
+			SUM(CASE WHEN unit_price IS NULL OR unit_price <= 0 OR unit_price != gross_sales/NULLIF(quantity, 0) THEN 1 ELSE 0 END) AS rows_failed_unit_price,
+			SUM(CASE WHEN profit >= net_sales THEN 1 ELSE 0 END) AS rows_failed_profit
 			INTO #dq_metrics
 		FROM silver_stg.orders;
 
@@ -254,14 +263,17 @@ BEGIN
 		SELECT @job_run_id, @step_run_id, @ingest_layer, @ingest_table, 'PRODUCT_ID_NULL', rows_checked, rows_failed_product_id_null AS rows_failed,
 		CASE WHEN rows_failed_product_id_null > 0 THEN 'FAILED' ELSE 'PASSED' END AS dq_status FROM #dq_metrics
 		UNION ALL
-		SELECT @job_run_id, @step_run_id, @ingest_layer, @ingest_table, 'INVALID_SALES', rows_checked, rows_failed_invalid_sales AS rows_failed,
+		SELECT @job_run_id, @step_run_id, @ingest_layer, @ingest_table, 'INVALID_GROSS_SALES', rows_checked, rows_failed_invalid_sales AS rows_failed,
 		CASE WHEN rows_failed_invalid_sales > 0 THEN 'FAILED' ELSE 'PASSED' END AS dq_status FROM #dq_metrics
 		UNION ALL
 		SELECT @job_run_id, @step_run_id, @ingest_layer, @ingest_table, 'INVALID_QUANTITY', rows_checked, rows_failed_invalid_quantity AS rows_failed,
 		CASE WHEN rows_failed_invalid_quantity > 0 THEN 'FAILED' ELSE 'PASSED' END AS dq_status FROM #dq_metrics
 		UNION ALL
 		SELECT @job_run_id, @step_run_id, @ingest_layer, @ingest_table, 'INVALID_UNIT_PRICE', rows_checked, rows_failed_unit_price AS rows_failed,
-		CASE WHEN rows_failed_unit_price > 0 THEN 'FAILED' ELSE 'PASSED' END AS dq_status FROM #dq_metrics;
+		CASE WHEN rows_failed_unit_price > 0 THEN 'FAILED' ELSE 'PASSED' END AS dq_status FROM #dq_metrics
+		UNION ALL
+		SELECT @job_run_id, @step_run_id, @ingest_layer, @ingest_table, 'INVALID_PROFIT', rows_checked, rows_failed_profit AS rows_failed,
+		CASE WHEN rows_failed_profit > 0 THEN 'FAILED' ELSE 'PASSED' END AS dq_status FROM #dq_metrics;
 
 		-- Stop operation when critical data quality rule is violated
 		IF EXISTS 
@@ -280,7 +292,8 @@ BEGIN
 			product_id,
 			order_date,
 			shipping_date,
-			sales,
+			gross_sales,
+			net_sales,
 			quantity,
 			discount,
 			profit,
@@ -293,7 +306,8 @@ BEGIN
 			product_id,
 			order_date,
 			shipping_date,
-			sales,
+			gross_sales,
+			net_sales,
 			quantity,
 			discount,
 			profit,
