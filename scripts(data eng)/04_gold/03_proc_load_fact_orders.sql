@@ -15,7 +15,7 @@ Note:
 	* Running this script independently demands that you assign an integer value to @job_run_id.
 	* It is imperative that this value already exist in the log table [metadata.etl_job_run] due
 	  to the foreign key constraint set on dependent tables.
-	* To test the working condition of this script, check folder titled "test_run_gold".
+	* To test the working condition of this script, check folder titled "test_run".
 =======================================================================================================
 */
 CREATE OR ALTER PROCEDURE gold.usp_load_gold_fact_orders @job_run_id INT AS
@@ -95,7 +95,8 @@ BEGIN
 			dp.product_key,
 			so.order_date,
 			so.shipping_date,
-			so.sales,
+			so.gross_sales,
+			so.net_sales,
 			so.quantity,
 			so.discount,
 			so.profit,
@@ -113,7 +114,8 @@ BEGIN
 			di.product_key,
 			di.order_date,
 			di.shipping_date,
-			di.sales,
+			di.gross_sales,
+			di.net_sales,
 			di.quantity,
 			di.discount,
 			di.profit,
@@ -160,7 +162,8 @@ BEGIN
 			product_key,
 			order_date,
 			shipping_date,
-			sales,
+			gross_sales,
+			net_sales,
 			quantity,
 			discount,
 			profit,
@@ -172,7 +175,8 @@ BEGIN
 			product_key,
 			order_date,
 			shipping_date,
-			sales,
+			gross_sales,
+			net_sales,
 			quantity,
 			discount,
 			profit,
