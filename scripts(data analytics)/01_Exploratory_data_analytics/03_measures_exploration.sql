@@ -25,7 +25,7 @@ SELECT SUM(profit) AS total_profit FROM gold.fact_orders;
 -- What is the overall profit to sales ratio?
 SELECT ROUND(CAST(SUM(profit) AS FLOAT)/SUM(gross_sales) * 100, 2) AS profit_ratio FROM gold.fact_orders;
 
--- What is the weighted price per quantity of product purchased?
+-- What is the realized average selling price?
 SELECT ROUND(CAST(SUM(gross_sales) AS FLOAT)/SUM(quantity), 2) AS weighted_avg_price FROM gold.fact_orders;
 
 -- What is the highest selling price?
