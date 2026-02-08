@@ -52,7 +52,7 @@ GROUP BY dc.country, dc.city
 ORDER BY dc.country, total_gross_sales DESC;
 
 
--- Which category of product generates the highest revenue, how does it compare to profit, 
+-- Which category of product generates the highest profit, how does it compare to total revenue, 
 -- and what other factors are responsible for the observed correlation btw sales & profit?
 SELECT
 	dp.category,
@@ -76,7 +76,7 @@ GROUP BY dp.category
 ORDER BY total_profit DESC;
 
 
--- Within each category, which subcategory generates the highest revenue, how does it compare to profit, 
+-- Within each category, which subcategory generates the highest profit, how does it compare to total revenue, 
 -- and what other factors are responsible for the observed correlation btw sales & profit?
 SELECT
 	dp.category,
@@ -101,8 +101,8 @@ GROUP BY dp.category, dp.sub_category
 ORDER BY dp.category, total_profit DESC;
 
 
--- Zooming into each category & subcategory, which product generates the highest revenue,
--- how does it compare to profit, and what other factors are responsible for the observed correlation btw sales & profit?
+-- Zooming into each category & subcategory, which product generates the highest profit, how does it compare to total revenue, 
+-- and what other factors are responsible for the observed correlation btw sales & profit?
 SELECT
 	dp.category,
 	dp.sub_category,
